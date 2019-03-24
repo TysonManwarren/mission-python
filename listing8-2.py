@@ -52,6 +52,41 @@ player_frame = 0
 player_image = PLAYER[player_direction][player_frame]
 player_offset_x, player_offset_y = 0, 0
 
+PLAYER_SHADOW = {  # REF (1)
+    "left": [images.spacesuit_left_shadow, images.spacesuit_left_1_shadow,
+            images.spacesuit_left_2_shadow, images.spacesuit_left_3_shadow,
+            images.spacesuit_left_3_shadow
+            ],
+    "right": [images.spacesuit_right_shadow, images.spacesuit_right_1_shadow,
+            images.spacesuit_right_2_shadow, images.spacesuit_right_3_shadow,
+            images.spacesuit_right_3_shadow
+            ],
+    "up": [images.spacesuit_back_shadow, images.spacesuit_back_1_shadow,
+            images.spacesuit_back_2_shadow, images.spacesuit_back_3_shadow,
+            images.spacesuit_back_3_shadow
+            ],
+    "down": [images.spacesuit_front_shadow, images.spacesuit_front_1_shadow,
+            images.spacesuit_front_2_shadow, images.spacesuit_front_3_shadow,
+            images.spacesuit_front_3_shadow
+            ]
+}
+
+player_image_shadow = PLAYER_SHADOW["down"][0] # REF (2)
+
+PILLARS = [ # REF (3)
+    images.pillar, images.pillar_95, images.pillar_80,
+    images.pillar_60, images.pillar_50
+]
+
+wall_transparency_frame = 0 # REF (4)
+
+BLACK = (0, 0, 0) # REF (5)
+BLUE = (0, 155, 255)
+YELLOW = (255, 255, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (128, 0, 0)
+
 ###############
 ##    MAP    ##
 ###############
@@ -161,7 +196,10 @@ objects = {
         "One of the scientific experiments. It gently vibrates"],
     33: [images.robot_arm, images.robot_arm_shadow,
         "A robot arm, used for heavy lifting"],
-    34: [images.toilet, images.half_shadow, "A sparkling clean toilet"],
+
+    #34: [images.toilet, images.half_shadow, "A sparkling clean toilet"],
+    34: [images.toilet_real, images.globe_shadow, "A sparkling clean toilet"],
+
     35: [images.sink, None, "A sink with running water", "the taps"],
     36: [images.globe, images.globe_shadow,
         "A giant globe of the planet. It gently glows from inside"],
@@ -195,9 +233,9 @@ objects = {
     54: [images.bubble_gum, None,
         "A piece of sticky bubble gum. Spaceberry flavour.", "bubble gum"],
     55: [images.yoyo, None, "A toy made of fine, strong string and plastic. \
-        Used for antigrav experiments.", PLAYER_NAME + "'s yoyo"],
+Used for antigrav experiments.", PLAYER_NAME + "'s yoyo"],
     56: [images.thread, None,
-        "A piece of fine, strong string", "a piece of string"],
+        "A piece of` fine, strong string", "a piece of string"],
     57: [images.needle, None,
         "A sharp needle from a cactus plant", "a cactus needle"],
     58: [images.threaded_needle, None,
@@ -262,8 +300,15 @@ items_player_may_stand_on = items_player_may_carry + [0, 39, 2, 48]
 # room number: [[object number, y position, x position]...]
 scenery = {
     26: [[39,8,2]],
-    27: [[33,5,5], [33,1,1], [33,1,8], [47,5,2],
-         [47,3,10], [47,9,8], [42,1,6]],
+
+#    27: [[33,5,5], [33,1,1], [33,1,8], [47,5,2],
+#         [47,3,10], [47,9,8], [42,1,6]],
+
+    # Lots of toilets
+    #27: [[34,5,5], [34,1,1], [34,1,8], [34,5,2],
+    #     [34,3,10], [34,9,8], [34,1,6], [34,1,2]],
+    27: [],
+
     28: [[27,0,3], [41,4,3], [41,4,7]],
     29: [[7,2,6], [6,2,8], [12,1,13], [44,0,1],
          [36,4,10], [10,1,1], [19,4,2], [17,4,4]],
@@ -292,13 +337,27 @@ scenery = {
          [19,1,5], [52,4,7], [14,1,8]],
     45: [[48,2,1], [48,2,2], [48,3,3], [48,3,4], [48,1,4], [48,1,1]],
     46: [[10,1,1], [4,1,2], [8,1,7], [9,1,8], [8,1,9], [5,4,3], [7,3,2]],
-    47: [[9,1,1], [9,1,2], [10,1,3], [12,1,7], [5,4,4], [6,4,7], [4,1,8]],
+
+    47: [[9,1,1], [9,1,2], [10,1,3], [12,1,7], [5,4,4], [6,4,7], [4,1,8], [70, 3, 5]],  ## ! Added in an MP3 player.  Book mentions it should be in this room
+
     48: [[17,4,1], [17,4,2], [17,4,3], [17,4,4], [17,4,5], [17,4,6], [17,4,7],
          [17,8,1], [17,8,2], [17,8,3], [17,8,4],
          [17,8,5], [17,8,6], [17,8,7], [14,1,1]],
     49: [[14,2,2], [14,2,4], [7,5,1], [5,5,3], [48,3,3], [48,3,4]],
     50: [[45,4,8], [11,1,1], [13,1,8], [33,2,1], [46,4,6]]
 }
+
+# Tyson is determined to fill a room with toilets
+for y in range(2, GAME_MAP[27][2] - 1, 2): # Width of the engineering lab (27)
+    for x in range(2, GAME_MAP[27][1] - 1, 2):
+        scenery[27] += [[34,x, y]]
+
+    #room_data = GAME_MAP[current_room]
+    #room_name = room_data[0]
+    #room_height = room_data[1]
+    #room_width = room_data[2]
+
+
 checksum = 0
 check_counter = 0
 for key, room_scenery_list in scenery.items():
@@ -308,9 +367,10 @@ for key, room_scenery_list in scenery.items():
                     + scenery_item_list[2] * (key + 2))
         check_counter += 1
 print(check_counter, "scenery items")
-assert check_counter == 161, "Expected 161 scenery items"
-assert checksum == 200095, "Error in scenery data"
-print("Scenery checksum: " + str(checksum))
+
+#assert check_counter == 161, "Expected 161 scenery items"
+#assert checksum == 200095, "Error in scenery data"
+#print("Scenery checksum: " + str(checksum))
 
 for room in range(1, 26): # Add random scenery in planet locations
     if room != 13: # Skip room 13
@@ -415,10 +475,32 @@ def generate_map():
             for tile_number in range(1, image_width_in_tiles):
                 room_map[scenery_y][scenery_x + tile_number] = 255
 
+    center_y = int(HEIGHT / 2) # Center of game window
+    center_x = int(WIDTH / 2)
+    room_pixel_width = room_width * TILE_SIZE # Size of room in pixels
+    room_pixel_height = room_height * TILE_SIZE
+    top_left_x = center_x - 0.5 * room_pixel_width
+    top_left_y = (center_y - 0.5 * room_pixel_height) + 110
+
+    for prop_number, prop_info in props.items():
+        prop_room = prop_info[0]
+        prop_y = prop_info[1]
+        prop_x = prop_info[2]
+        if (prop_room == current_room and
+                room_map[prop_y][prop_x] in [0, 39, 2]):
+            room_map[prop_y][prop_x] = prop_number
+            image_here = objects[prop_number][0]
+            image_width = image_here.get_width()
+            image_width_in_tiles = int(image_width / TILE_SIZE)
+            for tile_number in range(1, image_width_in_tiles):
+                room_map[prop_y][prop_x + tile_number] = 255
 
 ###############
 ## GAME LOOP ##
 ###############
+
+def start_room():
+    show_text("You are here: " + room_name, 0)
 
 def game_loop():
     global player_x, player_y, current_room
@@ -477,7 +559,7 @@ def game_loop():
         player_x = 0 # enter at left
         player_y = int(room_height / 2) # enter at door
         player_frame = 0
-        #start_room()
+        start_room()
         return
 
     if player_x == -1: # through door on LEFT
@@ -487,7 +569,7 @@ def game_loop():
         player_x = room_width - 1 # enter at right
         player_y = int(room_height / 2) # enter at door
         player_frame = 0
-        #start_room()
+        start_room()
         return
 
     if player_y == room_height: # through door at BOTTOM
@@ -497,7 +579,7 @@ def game_loop():
         player_y = 0 # enter at top
         player_x = int(room_width / 2) # enter at door
         player_frame = 0
-        #start_room()
+        start_room()
         return
 
     if player_y == -1: # through door at TOP
@@ -507,8 +589,24 @@ def game_loop():
         player_y = room_height - 1 # enter at bottom
         player_x = int(room_width / 2) # enter at door
         player_frame = 0
-        #start_room()
+        start_room()
         return
+
+    if keyboard.g:
+        pick_up_object()
+
+    if keyboard.tab and len(in_my_pockets) > 0:
+        selected_item += 1
+        if selected_item > len(in_my_pockets) - 1:
+            selected_item = 0
+        item_carrying = in_my_pockets[selected_item]
+        display_inventory()
+
+    if keyboard.d and item_carrying:
+        drop_object(old_player_y, old_player_x)
+
+    if keyboard.space:
+        examine_object()
 
     # If the player is standing somewhere they shouldn't, move them back.
     # Keep the 2 comments below - you'll need them later
@@ -527,42 +625,274 @@ def game_loop():
     if player_direction == "down" and player_frame > 0:
         player_offset_y = -1 + (0.25 * player_frame)
 
-##############
-## EXPLORER ##
-##############
+
+#################
+##   DISPLAY   ##
+#################
+
+def draw_image(image, y, x): # REF(1)
+    screen.blit( # REF (2)
+        image,
+        (top_left_x + (x * TILE_SIZE),
+         top_left_y + (y * TILE_SIZE) - image.get_height()
+        )
+    )
+
+def draw_shadow(image, y, x): # REF (3)
+    screen.blit(
+        image,
+        (top_left_x + (x * TILE_SIZE),
+         top_left_y + (y * TILE_SIZE)
+        )
+    )
+
+def draw_player():
+    player_image = PLAYER[player_direction][player_frame] # REF (4)
+    draw_image(player_image, player_y + player_offset_y, # REF (5)
+               player_x + player_offset_x)
+    player_image_shadow = PLAYER_SHADOW[player_direction][player_frame] # REF (6)
+    draw_shadow(player_image_shadow, player_y + player_offset_y, # REF (7)
+                player_x + player_offset_x)
 
 def draw():
-    global room_height, room_width, room_map
-    generate_map()
-    screen.clear()
+    if game_over:
+        return
 
-    #room_map[2][4] = 7
-    #room_map[2][6] = 6
-    #room_map[1][1] = 8
-    #room_map[1][2] = 9
-    #room_map[1][8] = 12
-    #room_map[1][9] = 9
+    # Clear the game arena area
+    box = Rect((0, 150), (800, 600)) # ! REF(1)
+    screen.draw.filled_rect(box, RED)
+    box = Rect((0, 0), (800, top_left_y + (room_height - 1) * 30))
 
-    for y in range(room_height):
+    screen.surface.set_clip(box) # ! REF(2)
+    floor_type = get_floor_type()
+
+    for y in range(room_height):  # ! REF(3)  Lay down floor tiles, then items on floor
         for x in range(room_width):
-            if room_map[y][x] != 255:
-                image_to_draw = objects[room_map[y][x]][0]
-                screen.blit(image_to_draw,
-                    (top_left_x + (x*30),
-                    top_left_y + (y*30) - image_to_draw.get_height()))
-        if player_y == y:
-            image_to_draw = PLAYER[player_direction][player_frame]
-            screen.blit(image_to_draw,
-                        (top_left_x + (player_x*30)+(player_offset_x*30),
-                        top_left_y + (player_y*30)+(player_offset_y*30)
-                        - image_to_draw.get_height())
-            )
+            draw_image(objects[floor_type][0], y, x)
+            # Next line enables shadows to fall on top of objects on floor
+            # ! NEED CLARIFICATION
+            if room_map[y][x] in items_player_may_stand_on:
+                draw_image(objects[room_map[y][x]][0], y, x)
+
+    # Pressure pad in room 26 is added here, so props can go on top of it. # ! REF(4)
+    if current_room == 26:
+        draw_image(objects[39][0], 8, 2)
+        image_on_pad = room_map[8][2]
+        if image_on_pad > 0:
+            draw_image(objects[image_on_pad][0], 8, 2)
+
+    for y in range(room_height): # ! REF(5)
+        for x in range(room_width):
+            item_here = room_map[y][x]
+            # Player cannot walk on 255: it marks spaces used by wide objects
+            if item_here not in items_player_may_stand_on + [255]:
+                image = objects[item_here][0]
+
+                if (current_room in outdoor_rooms # ! REF(6)
+                    and y -- room_height - 1
+                    and room_map[y][x] == 1) or \
+                    (current_room not in outdoor_rooms
+                        and y == room_height - 1
+                        and room_map[y][x] == 1
+                        and x > 0
+                        and x < room_width -1):
+                        # Add transparent wall image in the front row.
+                        image = PILLARS[wall_transparency_frame]
+
+                draw_image(image, y, x)
+
+                if objects[item_here][1] is not None: # If object has a shadow   # ! REF(7)
+                    shadow_image = objects[item_here][1]
+                    # If shadow might need horizontal tiling
+                    if shadow_image in [images.half_shadow,  # ! REF(8)
+                                        images.full_shadow]:
+                        shadow_width = int(image.get_width() / TILE_SIZE)
+                        # Use shadow across width of object:
+                        for z in range(0, shadow_width):
+                            draw_shadow(shadow_image, y, x + z)
+                    else:
+                        draw_shadow(shadow_image, y, x)
+
+        if (player_y == y): # ! REF(9)
+            draw_player()
+
+    screen.surface.set_clip(None) # ! REF(10)  This doesn't seem to do anything?
+
+def adjust_wall_transparency():
+    global wall_transparency_frame
+
+    if (player_y == room_height - 2
+            and room_map[room_height - 1][player_x] == 1
+            and wall_transparency_frame < 4):
+        wall_transparency_frame += 1 # Fade wall out
+
+    if ((player_y < room_height -2
+            or room_map[room_height - 1][player_x] != 1)
+            and wall_transparency_frame > 0):
+        wall_transparency_frame -= 1
+
+def show_text(text_to_show, line_number):
+    if game_over:
+        return
+    text_lines = [15, 50]
+    box = Rect((0, text_lines[line_number]), (800, 35))
+    screen.draw.filled_rect(box, BLACK)
+    screen.draw.text(text_to_show,
+                    (20, text_lines[line_number]), color=GREEN)
+
+###############
+##   PROPS   ##
+###############
+# Props are objects that may move between rooms, appear or disappear.
+# All props must be set up here. Props not yet in the game go into room 0.
+# object number : [room, y, x]
+props = {
+    20: [31, 0, 4], 21: [26, 0, 1], 22: [41, 0, 2], 23: [39, 0, 5],
+    24: [45, 0, 2],
+    25: [32, 0, 2], 26: [27, 12, 5], # two sides of same door
+    40: [0, 8, 6], 53: [45, 1, 5], 54: [0, 0, 0], 55: [0, 0, 0],
+    56: [0, 0, 0], 57: [35, 4, 6], 58: [0, 0, 0], 59: [31, 1, 7],
+    60: [0, 0, 0], 61: [36, 1, 1], 62: [36, 1, 6], 63: [0, 0, 0],
+    64: [27, 8, 3], 65: [50, 1, 7], 66: [39, 5, 6], 67: [46, 1, 1],
+
+    68: [0, 0, 0], 69: [30, 3, 3], 70: [47, 1, 3],
+
+    71: [0, LANDER_Y, LANDER_X], 72: [0, 0, 0], 73: [27, 4, 6],
+    74: [28, 1, 11], 75: [0, 0, 0], 76: [41, 3, 5], 77: [0, 0, 0],
+    78: [35, 9, 11], 79: [26, 3, 2], 80: [41, 7, 5], 81: [29, 1, 1]
+}
+
+checksum = 0
+for key, prop in props.items():
+    if key != 71: # 71 is skipped because it's different each game.
+        checksum += (prop[0] * key
+                    + prop[1] * (key + 1)
+                    + prop[2] * (key + 2))
+print(len(props), "props")
+assert len(props) == 37, "Expected 37 prop items"
+print("Prop checksum:", checksum)
+assert checksum == 61414, "Error in props data"
+
+in_my_pockets = [55]
+#in_my_pockets = [55, 59, 61, 64, 65, 66, 67] * 3
+selected_item = 0 # the first item
+item_carrying = in_my_pockets[selected_item]
+
+#######################
+## PROP INTERACTIONS ##
+#######################
+
+def find_object_start_x():
+    checker_x = player_x
+    while room_map[player_y][checker_x] == 255:
+        checker_x -= 1
+    return checker_x
+
+def get_item_under_player():
+    item_x = find_object_start_x()
+    item_player_is_on = room_map[player_y][item_x]
+    return item_player_is_on
+
+def pick_up_object():
+    global room_map
+    item_player_is_on = get_item_under_player()
+    if item_player_is_on in items_player_may_carry:
+        room_map[player_y][player_x] = get_floor_type()
+        add_object(item_player_is_on)
+        show_text("Now carrying " + objects[item_player_is_on][3], 0)
+        sounds.pickup.play()
+        time.sleep(0.5)
+    else:
+        show_text("You can't carry that!", 0)
+
+def add_object(item): # Adds item to inventory
+    global selected_item, item_carrying
+    in_my_pockets.append(item)
+    items_carrying = item
+    selected_item = len(in_my_pockets) - 1
+    display_inventory()
+    props[item][0] = 0 # Carried objects go into room 0 (off the map)
+
+def display_inventory():
+    box = Rect((0, 45), (800, 105))
+    screen.draw.filled_rect(box, BLACK)
+
+    if len(in_my_pockets) == 0:
+        return
+
+    start_display = (selected_item // 16) * 16
+    list_to_show = in_my_pockets[start_display : start_display + 16]
+    selected_marker = selected_item % 16
+
+
+    # ! How does this handle off-screen inventory?
+
+    for item_counter in range(len(list_to_show)):
+        item_number = list_to_show[item_counter]
+        image = objects[item_number][0]
+        screen.blit(image, (25 + (46 * item_counter), 90))
+
+    box_left = (selected_marker * 46) - 3
+    box = Rect((22 + box_left, 85), (40, 40))
+    screen.draw.rect(box, WHITE)
+    item_highlighted = in_my_pockets[selected_item]
+    description = objects[item_highlighted][2]
+    screen.draw.text(description, (20, 130), color="white")
+
+def drop_object(old_y, old_x):
+    global room_map, props
+    if room_map[old_y][old_x] in [0, 2, 39]: # places you can drop things
+        props[item_carrying][0] = current_room
+        props[item_carrying][1] = old_y
+        props[item_carrying][2] = old_x
+        room_map[old_y][old_x] = item_carrying
+        show_text("You have dropped " + objects[item_carrying][3], 0)
+        sounds.drop.play()
+        remove_object(item_carrying)
+        time.sleep(0.5)
+    else: # This only happens if there is already a prop here
+        show_text("You can't drop that there.", 0)
+        time.sleep(0.5)
+
+def remove_object(item): # Takes item out of inventory
+    global selected_item, in_my_pockets, item_carrying
+    in_my_pockets.remove(item)
+    selected_item = selected_item - 1
+    if selected_item < 0:
+        selected_item = 0
+    if len(in_my_pockets) == 0: # If they're not carrying anything
+        item_carrying = False # Set item_carrying to False
+    else: # Otherwise set it to the new selected item
+        item_carrying = in_my_pockets[selected_item]
+    display_inventory()
+
+def examine_object():
+    item_player_is_on = get_item_under_player()
+    left_tile_of_item = find_object_start_x()
+    if item_player_is_on in [0, 2]: # don't describe the floor
+        return
+    description = "You see: " + objects[item_player_is_on][2]
+    for prop_number, details in props.items():
+        # props = object number: [room number, y, x]
+        if details[0] == current_room: # if prop is in the room
+            # If prop is hidden (= at player's location but not on map)
+            if (details[1] == player_y
+                    and details[2] == left_tile_of_item
+                    and room_map[details[1]][details[2]] != prop_number):
+                add_object(prop_number)
+                description = "You found " + objects[prop_number][3]
+                sounds.combine.play()
+    show_text(description, 0)
+    time.sleep(0.5)
 
 ###############
 ##   START   ##
 ###############
 
 clock.schedule_interval(game_loop, 0.03)
+generate_map()
+clock.schedule_interval(adjust_wall_transparency, 0.05)
+clock.schedule_unique(display_inventory, 1)
 
 #def movement():
 #    global current_room
