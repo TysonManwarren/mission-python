@@ -8,6 +8,9 @@ import time, random, math
 WIDTH = 800
 HEIGHT = 800
 
+HAZARDS_ON = 0
+NO_CLIPPING = 1
+
 # Player variables
 PLAYER_NAME = "Tyson"
 FRIEND1_NAME = "Diana"
@@ -86,6 +89,10 @@ YELLOW = (255, 255, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 RED = (128, 0, 0)
+
+air, energy = 100, 100
+suit_stitched, air_fixed = False, False
+launch_frame = 0
 
 ###############
 ##    MAP    ##
@@ -168,23 +175,23 @@ objects = {
     19: [images.pipes3, images.pipes3_shadow,
         "Pipes for the life support systems"],
     20: [images.door, images.door_shadow, "Safety door. Opens automatically \
-        for astronauts in functioning spacesuits."],
+for astronauts in functioning spacesuits."],
     21: [images.door, images.door_shadow, "The airlock door. \
-        For safety reasons, it requires two person operation."],
+For safety reasons, it requires two person operation."],
     22: [images.door, images.door_shadow, "A locked door. It needs " \
-        + PLAYER_NAME + "'s access card"],
++ PLAYER_NAME + "'s access card"],
     23: [images.door, images.door_shadow, "A locked door. It needs " \
-        + FRIEND1_NAME + "'s access card"],
++ FRIEND1_NAME + "'s access card"],
     24: [images.door, images.door_shadow, "A locked door. It needs " \
-        + FRIEND2_NAME + "'s access card"],
++ FRIEND2_NAME + "'s access card"],
     25: [images.door, images.door_shadow,
         "A locked door. It is opened from Main Mission Control"],
     26: [images.door, images.door_shadow,
         "A locked door in the engineering bay."],
     27: [images.map, images.full_shadow,
         "The screen says the crash site was Sector: " \
-        + str(LANDER_SECTOR) + " // X: " + str(LANDER_X) + \
-        " // Y: " + str(LANDER_Y)],
++ str(LANDER_SECTOR) + " // X: " + str(LANDER_X) + \
+" // Y: " + str(LANDER_Y)],
     28: [images.rock_large, images.rock_large_shadow,
         "A rock. Its coarse surface feels like a whetstone", "the rock"],
     29: [images.rock_small, images.rock_small_shadow,
@@ -197,8 +204,10 @@ objects = {
     33: [images.robot_arm, images.robot_arm_shadow,
         "A robot arm, used for heavy lifting"],
 
-    #34: [images.toilet, images.half_shadow, "A sparkling clean toilet"],
-    34: [images.toilet_real, images.globe_shadow, "A sparkling clean toilet"],
+    34: [images.toilet, images.half_shadow, "A sparkling clean toilet"],
+
+    # A more realistic non-space toilet
+    #34: [images.toilet_real, images.globe_shadow, "A sparkling clean toilet"],
 
     35: [images.sink, None, "A sink with running water", "the taps"],
     36: [images.globe, images.globe_shadow,
@@ -260,20 +269,20 @@ Used for antigrav experiments.", PLAYER_NAME + "'s yoyo"],
     68: [images.food, None,
         "A food pouch. Use it to get 100% energy.", "ready-to-eat food"],
     69: [images.book, None, "The book has the words 'Don't Panic' on the \
-        cover in large, friendly letters", "a book"],
+cover in large, friendly letters", "a book"],
     70: [images.mp3_player, None,
         "An MP3 player, with all the latest tunes", "an MP3 player"],
     71: [images.lander, None, "The Poodle, a small space exploration craft. \
-        Its black box has a radio sealed inside.", "the Poodle lander"],
+Its black box has a radio sealed inside.", "the Poodle lander"],
     72: [images.radio, None, "A radio communications system, from the \
-        Poodle", "a communications radio"],
+Poodle", "a communications radio"],
     73: [images.gps_module, None, "A GPS Module", "a GPS module"],
     74: [images.positioning_system, None, "Part of a positioning system. \
-        Needs a GPS module.", "a positioning interface"],
+Needs a GPS module.", "a positioning interface"],
     75: [images.positioning_system, None,
-        "A working positioning system", "a positioning computer"],
+"A working positioning system", "a positioning computer"],
     76: [images.scissors, None, "Scissors. They're too blunt to cut \
-        anything. Can you sharpen them?", "blunt scissors"],
+anything. Can you sharpen them?", "blunt scissors"],
     77: [images.scissors, None,
         "Razor-sharp scissors. Careful!", "sharpened scissors"],
     78: [images.credit, None,
@@ -301,13 +310,13 @@ items_player_may_stand_on = items_player_may_carry + [0, 39, 2, 48]
 scenery = {
     26: [[39,8,2]],
 
-#    27: [[33,5,5], [33,1,1], [33,1,8], [47,5,2],
-#         [47,3,10], [47,9,8], [42,1,6]],
+    27: [[33,5,5], [33,1,1], [33,1,8], [47,5,2],
+         [47,3,10], [47,9,8], [42,1,6]],
 
     # Lots of toilets
     #27: [[34,5,5], [34,1,1], [34,1,8], [34,5,2],
     #     [34,3,10], [34,9,8], [34,1,6], [34,1,2]],
-    27: [],
+    #27: [],
 
     28: [[27,0,3], [41,4,3], [41,4,7]],
     29: [[7,2,6], [6,2,8], [12,1,13], [44,0,1],
@@ -338,7 +347,8 @@ scenery = {
     45: [[48,2,1], [48,2,2], [48,3,3], [48,3,4], [48,1,4], [48,1,1]],
     46: [[10,1,1], [4,1,2], [8,1,7], [9,1,8], [8,1,9], [5,4,3], [7,3,2]],
 
-    47: [[9,1,1], [9,1,2], [10,1,3], [12,1,7], [5,4,4], [6,4,7], [4,1,8], [70, 3, 5]],  ## ! Added in an MP3 player.  Book mentions it should be in this room
+    47: [[9,1,1], [9,1,2], [10,1,3], [12,1,7], [5,4,4], [6,4,7], [4,1,8]],
+    #47: [[9,1,1], [9,1,2], [10,1,3], [12,1,7], [5,4,4], [6,4,7], [4,1,8], [70, 3, 5]],  ## ! Added in an MP3 player.  Book mentions it should be in this room
 
     48: [[17,4,1], [17,4,2], [17,4,3], [17,4,4], [17,4,5], [17,4,6], [17,4,7],
          [17,8,1], [17,8,2], [17,8,3], [17,8,4],
@@ -348,9 +358,9 @@ scenery = {
 }
 
 # Tyson is determined to fill a room with toilets
-for y in range(2, GAME_MAP[27][2] - 1, 2): # Width of the engineering lab (27)
-    for x in range(2, GAME_MAP[27][1] - 1, 2):
-        scenery[27] += [[34,x, y]]
+#for y in range(2, GAME_MAP[27][2] - 1, 2): # Width of the engineering lab (27)
+    #for x in range(2, GAME_MAP[27][1] - 1, 2):
+        #scenery[27] += [[34,x, y]]
 
     #room_data = GAME_MAP[current_room]
     #room_name = room_data[0]
@@ -385,7 +395,7 @@ for room_coordinate in range(0, 13):
     for room_number in [1, 6, 11, 16, 21]: # Add left fence
         scenery[room_number] += [[31, room_coordinate, 0]]
     for room_number in [5, 10, 15, 20, 25]: # Add right fence
-        scenery[room_number] += [[31, room_coordinate, 0]]
+        scenery[room_number] += [[31, room_coordinate, 12]]
 
 del scenery[21][-1] # Delete last fence panel in Room 21
 del scenery[25][-1] # Delete last fence panel in Room 25
@@ -495,12 +505,24 @@ def generate_map():
             for tile_number in range(1, image_width_in_tiles):
                 room_map[prop_y][prop_x + tile_number] = 255
 
+    hazard_map = [] # empty list
+    for y in range(room_height):
+        hazard_map.append( [0] * room_width )
+
 ###############
 ## GAME LOOP ##
 ###############
 
 def start_room():
-    show_text("You are here: " + room_name, 0)
+    global airlock_door_frame
+    show_text("You are here: " + room_name + "(" + str(current_room) + ")", 0)
+    if current_room == 26: # Room with self-shutting airlock door
+        airlock_door_frame = 0
+        clock.schedule_interval(door_in_room_26, 0.05)
+
+    # Start hazards
+    if HAZARDS_ON:
+        hazard_start()
 
 def game_loop():
     global player_x, player_y, current_room
@@ -553,7 +575,7 @@ def game_loop():
 
     # check for exiting the room
     if player_x == room_width: # through door on RIGHT
-        #clock.unschedule(hazard_move)
+        clock.unschedule(hazard_move)
         current_room += 1
         generate_map()
         player_x = 0 # enter at left
@@ -563,7 +585,7 @@ def game_loop():
         return
 
     if player_x == -1: # through door on LEFT
-        #clock.unschedule(hazard_move)
+        clock.unschedule(hazard_move)
         current_room -= 1
         generate_map()
         player_x = room_width - 1 # enter at right
@@ -573,7 +595,7 @@ def game_loop():
         return
 
     if player_y == room_height: # through door at BOTTOM
-    #clock.unschedule(hazard_move)
+        clock.unschedule(hazard_move)
         current_room += MAP_WIDTH
         generate_map()
         player_y = 0 # enter at top
@@ -583,7 +605,7 @@ def game_loop():
         return
 
     if player_y == -1: # through door at TOP
-        #clock.unschedule(hazard_move)
+        clock.unschedule(hazard_move)
         current_room -= MAP_WIDTH
         generate_map()
         player_y = room_height - 1 # enter at bottom
@@ -596,6 +618,7 @@ def game_loop():
         pick_up_object()
 
     if keyboard.tab and len(in_my_pockets) > 0:
+        time.sleep(0.15)
         selected_item += 1
         if selected_item > len(in_my_pockets) - 1:
             selected_item = 0
@@ -608,13 +631,34 @@ def game_loop():
     if keyboard.space:
         examine_object()
 
+    if keyboard.u:
+        use_object()
+
+    ## Teleporter for testing
+    ## Remove this section for the real game
+    if keyboard.x:
+        current_room = int(input("Enter room number:"))
+        player_x = 2
+        player_y = 2
+        generate_map()
+        start_room()
+
+        # This sound is annoying
+        #sounds.teleport.play()
+
+    ## Teleport section ends
+
     # If the player is standing somewhere they shouldn't, move them back.
     # Keep the 2 comments below - you'll need them later
-    if room_map[player_y][player_x] not in items_player_may_stand_on: #\
-    #           or hazard_map[player_y][player_x] != 0:
-        player_x = old_player_x
-        player_y = old_player_y
-        player_frame = 0
+    if NO_CLIPPING == 0:
+        if room_map[player_y][player_x] not in items_player_may_stand_on \
+                or hazard_map[player_y][player_x] != 0:
+            player_x = old_player_x
+            player_y = old_player_y
+            player_frame = 0
+
+    if room_map[player_y][player_x] == 48 and HAZARDS_ON: # toxic floor
+        deplete_energy(1)
 
     if player_direction == "right" and player_frame > 0:
         player_offset_x = -1 + (0.25 * player_frame)
@@ -660,7 +704,8 @@ def draw():
 
     # Clear the game arena area
     box = Rect((0, 150), (800, 600)) # ! REF(1)
-    screen.draw.filled_rect(box, RED)
+    screen.draw.filled_rect(box, BLACK)
+
     box = Rect((0, 0), (800, top_left_y + (room_height - 1) * 30))
 
     screen.surface.set_clip(box) # ! REF(2)
@@ -668,7 +713,9 @@ def draw():
 
     for y in range(room_height):  # ! REF(3)  Lay down floor tiles, then items on floor
         for x in range(room_width):
+
             draw_image(objects[floor_type][0], y, x)
+
             # Next line enables shadows to fall on top of objects on floor
             # ! NEED CLARIFICATION
             if room_map[y][x] in items_player_may_stand_on:
@@ -683,9 +730,12 @@ def draw():
 
     for y in range(room_height): # ! REF(5)
         for x in range(room_width):
+
             item_here = room_map[y][x]
+
             # Player cannot walk on 255: it marks spaces used by wide objects
             if item_here not in items_player_may_stand_on + [255]:
+
                 image = objects[item_here][0]
 
                 if (current_room in outdoor_rooms # ! REF(6)
@@ -712,6 +762,11 @@ def draw():
                             draw_shadow(shadow_image, y, x + z)
                     else:
                         draw_shadow(shadow_image, y, x)
+
+            hazard_here = hazard_map[y][x]
+
+            if hazard_here != 0: # If there's a hazard at this position
+                draw_image(objects[hazard_here][0], y, x)
 
         if (player_y == y): # ! REF(9)
             draw_player()
@@ -777,6 +832,43 @@ in_my_pockets = [55]
 #in_my_pockets = [55, 59, 61, 64, 65, 66, 67] * 3
 selected_item = 0 # the first item
 item_carrying = in_my_pockets[selected_item]
+
+RECIPES = [
+    # empty bin + sink = full bin
+    [62, 35, 63],
+    # scissors + rock = sharp scissors
+    [76, 28, 77],
+    # credit + vending machine = bubble gum
+    [78, 38, 54],
+    # gps module + positioning system = working positioning system
+    [73, 74, 75],
+    # canister + bubble gum = sealed air canister
+    [59, 54, 60],
+    # scissors + yoyo = string
+    [77, 55, 56],
+    # thread + needle
+    [56, 57, 58],
+    # lander + hammer
+    [71, 65, 72],
+
+    [88, 58, 89],
+
+    [89, 60, 90],
+    # food pouch + sink = food
+    [67, 35, 68]
+    ]
+
+checksum = 0
+check_counter = 1
+for recipe in RECIPES:
+    checksum += (recipe[0] * check_counter
+                + recipe[1] * (check_counter + 1)
+                + recipe[2] * (check_counter + 2))
+    check_counter += 3
+print(len(RECIPES), "recipes")
+assert len(RECIPES) == 11, "Expected 11 recipes"
+assert checksum == 37296, "Error in recipes data"
+print("Recipe checksum:", checksum)
 
 #######################
 ## PROP INTERACTIONS ##
@@ -885,6 +977,432 @@ def examine_object():
     show_text(description, 0)
     time.sleep(0.5)
 
+#################
+## USE OBJECTS ##
+#################
+
+def use_object():
+    global room_map, props, item_carrying, air, selected_item, energy
+    global in_my_pockets, suit_stitched, air_fixed, game_over
+
+    use_message = "You fiddle around with it but don't get anywhere." # REF(1)
+    standard_responses = { # REF (2)
+    4: "Air is running out! You can't take this lying down!",
+    6: "This is no time to sit around!",
+    7: "This is no time to sit around!",
+    32: "It shakes and rumbles, but nothing else happens.",
+    34: "Ah! That's better. Now wash your hands.",
+    35: "You wash your hands and shake the water off.",
+    37: "The test tubes smoke slightly as you shake them.",
+    54: "You chew the gum. It's sticky like glue.",
+    55: "The yoyo bounces up and down, slightly slower than on Earth",
+    56: "It's a bit too fiddly. Can you thread it on something?",
+    59: "You need to fix the leak before you can use the canister",
+    61: "You try signalling with the mirror, but nobody can see you.",
+    62: "Don't throw resources away. Things might come in handy...",
+    67: "To enjoy yummy space food, just add water!",
+    75: "You are at Sector: " + str(current_room) + " // X: " + str(player_x) + " // Y: " + str(player_y)
+    }
+
+    # Get object number at player's location.
+    item_player_is_on = get_item_under_player() # REF(3)
+
+    for this_item in [item_player_is_on, item_carrying]: # REF(4)
+        if this_item in standard_responses: # REF(5)
+            use_message = standard_responses[this_item] # REF (6)
+
+    if item_carrying == 70 or item_player_is_on == 70: # REF(1)
+        use_message = "Banging tunes!"
+        sounds.steelmusic.play(2)
+
+    elif item_player_is_on == 11: # REF (2)
+        use_message = "AIR: " + str(air) + \
+            "% / ENERGY " + str(energy) + "% / " # REF(3)
+        if not suit_stitched:
+            use_message += "*ALERT* SUIT FABRIC TORN / "
+        if not air_fixed:
+            use_message += "*ALERT* SUIT AIR BOTTLE MISSING"
+        if suit_stitched and air_fixed:
+            use_message += " SUIT OK"
+        show_text(use_message, 0)
+        sounds.say_status_report.play()
+        time.sleep(0.5)
+        # If "on" the computer, player intention is clearly status update.
+        # Return to stop another object use accidentally overriding this.
+        return # REF(4)
+
+    elif item_carrying == 60 or item_player_is_on == 60:
+        use_message = "You fix " + objects[60][3] + " to the suit" # REF(5)
+        air_fixed = True
+        air = 90
+        air_countdown()
+        remove_object(60)
+
+    elif (item_carrying == 58 or item_player_is_on == 58) \
+        and not suit_stitched:
+        use_message = "You use " + objects[56][3] + \
+" to repair the suit fabric"
+        suit_stitched = True
+        remove_object(58)
+
+    elif item_carrying == 72 or item_player_is_on == 72:
+        use_message = "You radio for help. A rescue ship is coming. \
+Rendezvous Sector 13, outside."
+        props[40][0] = 13
+
+    elif (item_carrying == 66 or item_player_is_on == 66) \
+            and current_room in outdoor_rooms:
+        use_message = "You dig..."
+        if (current_room == LANDER_SECTOR
+                and player_x == LANDER_X
+                and player_y == LANDER_Y):
+            add_object(71)
+            use_message = "You found the Poodle lander!"
+
+    elif item_player_is_on == 40:
+        clock.unschedule(air_countdown)
+        show_text("Congratulations, "+ PLAYER_NAME +"!", 0)
+        show_text("Mission success! You have made it to safety.", 1)
+        game_over = True
+        sounds.take_off.play()
+        game_completion_sequence()
+
+    elif item_player_is_on == 16:
+        energy += 1
+        if energy > 100:
+            energy = 100
+        use_message = "You munch the lettuce and get a little energy back"
+        draw_energy_air()
+
+    # Doors
+    elif item_player_is_on == 42:
+        if current_room == 27:
+            open_door(26)
+        props[25][0] = 0 # Door from RM32 to engineering bay
+        props[26][0] = 0 # Door inside engineering bay
+        clock.schedule_unique(shut_engineering_door, 60)
+        use_message = "You press the button"
+        show_text("Door to engineering bay is open for 60 seconds", 1)
+        sounds.say_doors_open.play()
+        sounds.doors.play()
+
+    elif item_carrying == 68 or item_player_is_on == 68:
+        energy = 100
+        use_message = "You use the food to restore your energy"
+        remove_object(68)
+        draw_energy_air()
+
+    if suit_stitched and air_fixed: # open airlock access
+        if current_room == 31 and props[20][0] == 31:
+            open_door(20) # which includes removing the door
+            sounds.say_airlock_open.play()
+            show_text("The computer tells you the airlock is now open.", 1)
+        elif props[20][0] == 31:
+            props[20][0] = 0 # remove door from map
+            sounds.say_airlock_open.play()
+            show_text("The computer tells you the airlock is now open.", 1)
+
+    for recipe in RECIPES:
+        ingredient1 = recipe[0]
+        ingredient2 = recipe[1]
+        combination = recipe[2]
+        if (item_carrying == ingredient1
+            and item_player_is_on == ingredient2) \
+            or (item_carrying == ingredient2
+                and item_player_is_on == ingredient1):
+            use_message = "You combine " + objects[ingredient1][3] \
+                        + " and " + objects[ingredient2][3] \
+                        + " to make " + objects[combination][3]
+            if item_player_is_on in props.keys():
+                props[item_player_is_on][0] = 0
+                room_map[player_y][player_x] = get_floor_type()
+            in_my_pockets.remove(item_carrying)
+            add_object(combination)
+            sounds.combine.play()
+
+    # {key object number: door object number}
+    ACCESS_DICTIONARY = { 79:22, 80:23, 81:24 }
+    if item_carrying in ACCESS_DICTIONARY:
+        door_number = ACCESS_DICTIONARY[item_carrying]
+        if props[door_number][0] == current_room:
+            use_message = "You unlock the door!"
+            sounds.say_doors_open.play()
+            sounds.doors.play()
+            open_door(door_number)
+
+    show_text(use_message, 0) # REF (7)
+    time.sleep(0.5)
+
+def game_completion_sequence():
+    global launch_frame #(initial value is 0, set up in VARIABLES section)
+    box = Rect((0, 150), (800, 600))
+    screen.draw.filled_rect(box, (128, 0, 0))
+    box = Rect ((0, top_left_y - 30), (800, 390))
+    screen.surface.set_clip(box)
+
+    for y in range(0, 13):
+        for x in range(0, 13):
+            draw_image(images.soil, y, x)
+
+    launch_frame += 1
+    if launch_frame < 9:
+        draw_image(images.rescue_ship, 8 - launch_frame, 6)
+        draw_shadow(images.rescue_ship_shadow, 8 + launch_frame, 6)
+        clock.schedule(game_completion_sequence, 0.25)
+    else:
+        screen.surface.set_clip(None)
+        screen.draw.text("MISSION", (200, 380), color = "white",
+                        fontsize = 128, shadow = (1, 1), scolor = "black")
+        screen.draw.text("COMPLETE", (145, 480), color = "white",
+                        fontsize = 128, shadow = (1, 1), scolor = "black")
+        sounds.completion.play()
+        sounds.say_mission_complete.play()
+
+###############
+##   DOORS   ##
+###############
+
+def open_door(opening_door_number):
+    global door_frames, door_shadow_frames
+    global door_frame_number, door_object_number
+    door_frames = [images.door1, images.door2, images.door3,
+                    images.door4, images.floor]
+    # (Final frame restores shadow ready for when door reappears).
+    door_shadow_frames = [images.door1_shadow, images.door2_shadow,
+                            images.door3_shadow, images.door4_shadow,
+                            images.door_shadow]
+    door_frame_number = 0
+    door_object_number = opening_door_number
+    do_door_animation()
+
+def close_door(closing_door_number):
+    global door_frames, door_shadow_frames
+    global door_frame_number, door_object_number, player_y
+    door_frames = [images.door4, images.door3, images.door2,
+                    images.door1, images.door]
+    door_shadow_frames = [images.door4_shadow, images.door3_shadow,
+                        images.door2_shadow, images.door1_shadow,
+                        images.door_shadow]
+    door_frame_number = 0
+    door_object_number = closing_door_number
+    # If player is in same row as a door, they must be in open doorway
+    if player_y == props[door_object_number][1]:
+        if player_y == 0: # if in the top doorway
+            player_y = 1 # move them down
+        else:
+            player_y = room_height - 2 # move them up
+    do_door_animation()
+
+def do_door_animation():
+    global door_frames, door_frame_number, door_object_number, objects
+    objects[door_object_number][0] = door_frames[door_frame_number]
+    objects[door_object_number][1] = door_shadow_frames[door_frame_number]
+    door_frame_number += 1
+    if door_frame_number == 5:
+        if door_frames[-1] == images.floor:
+            props[door_object_number][0] = 0 # remove door from props list
+        # Regenerate room map from the props
+        # to put the door in the room if required.
+            generate_map()
+    else:
+        clock.schedule(do_door_animation, 0.15)
+
+def shut_engineering_door():
+    global current_room, door_room_number, props
+    props[25][0] = 32 # Door from room 32 to the engineering bay.
+    props[26][0] = 27 # Door inside engineering bay.
+    generate_map() # Add door to room_map for if in affected room.
+    if current_room == 27:
+        close_door(26)
+    if current_room == 32:
+        close_door(25)
+    show_text("The computer tells you the doors are closed.", 1)
+    sounds.say_doors_closed.play()
+
+def door_in_room_26():
+    global airlock_door_frame, room_map
+    frames = [images.door, images.door1, images.door2,
+            images.door3,images.door4, images.floor
+            ]
+    shadow_frames = [images.door_shadow, images.door1_shadow,
+                    images.door2_shadow, images.door3_shadow,
+                    images.door4_shadow, None]
+    if current_room != 26:
+        clock.unschedule(door_in_room_26)
+        return
+    # prop 21 is the door in Room 26.
+    if ((player_y == 8 and player_x == 2) or props[63] == [26, 8, 2]) \
+            and props[21][0] == 26:
+        airlock_door_frame += 1
+        if airlock_door_frame == 5:
+            props[21][0] = 0 # Remove door from map when fully open.
+            room_map[0][1] = 0
+            room_map[0][2] = 0
+            room_map[0][3] = 0
+    if ((player_y != 8 or player_x != 2) and props[63] != [26, 8, 2]) \
+            and airlock_door_frame > 0:
+        if airlock_door_frame == 5:
+            # Add door to props and map so animation is shown.
+            props[21][0] = 26
+            room_map[0][1] = 21
+            room_map[0][2] = 255
+            room_map[0][3] = 255
+            airlock_door_frame -= 1
+    objects[21][0] = frames[airlock_door_frame]
+    objects[21][1] = shadow_frames[airlock_door_frame]
+
+###############
+##    AIR    ##
+###############
+
+def draw_energy_air():
+    box = Rect((20, 765), (350, 20))
+    screen.draw.filled_rect(box, BLACK) # Clear air bar.
+    screen.draw.text("AIR", (20, 766), color=BLUE)
+    screen.draw.text("ENERGY", (180, 766), color=YELLOW)
+
+    if air > 0:
+        box = Rect((50, 765), (air, 20))
+        screen.draw.filled_rect(box, BLUE) # Draw new air bar.
+
+    if energy > 0:
+        box = Rect((250, 765), (energy, 20))
+        screen.draw.filled_rect(box, YELLOW) # Draw new energy bar.
+
+    screen.draw.text("Controls: Move (ARROW KEYS) Examine (SPACEBAR) Get (G) Use (U) ", (400, 766), color=WHITE)
+    #screen.draw.text("Move: Arrow Keys", (400, 676), color=WHITE)
+
+def end_the_game(reason):
+    global game_over
+    show_text(reason, 1)
+    game_over = True
+    sounds.say_mission_fail.play()
+    sounds.gameover.play()
+    screen.draw.text("GAME OVER", (120, 400), color = "white",
+                    fontsize = 128, shadow = (1, 1), scolor = "black")
+
+def air_countdown():
+    global air, game_over
+    if game_over:
+        return # Don't sap air when they're already dead.
+    air -= 1
+    if air == 20:
+        sounds.say_air_low.play()
+    if air == 10:
+        sounds.say_act_now.play()
+    draw_energy_air()
+    if air < 1:
+        end_the_game("You're out of air!")
+
+def alarm():
+    show_text("Air is running out, " + PLAYER_NAME
+                + "! Get to safety, then radio for help!", 1)
+    sounds.alarm.play(3)
+    sounds.say_breach.play()
+
+###############
+##  HAZARDS  ##
+###############
+
+hazard_data = {
+    # room number: [[y, x, direction, bounce addition to direction]]
+    28: [[1, 8, 2, 1], [7, 3, 4, 1]], 32: [[1, 5, 1, 1]],
+    34: [[5, 1, 1, 1], [5, 5, 1, 2]], 35: [[4, 4, 1, 2], [2, 5, 2, 2]],
+    36: [[2, 1, 2, 2]], 38: [[1, 4, 3, 2], [5, 8, 1, 2]],
+    40: [[3, 1, 3, 1], [6, 5, 2, 2], [7, 5, 4, 2]],
+    41: [[4, 5, 2, 2], [6, 3, 4, 2], [8, 1, 2, 2]],
+    42: [[2, 1, 2, 2], [4, 3, 2, 2], [6, 5, 2, 2]],
+    46: [[2, 1, 2, 2]],
+    48: [[1, 8, 3, 2], [8, 8, 1, 2], [3, 9, 3, 2]]
+    }
+
+def deplete_energy(penalty):
+    global energy, game_over
+    if game_over:
+        return # Don't sap energy when they're already dead.
+    energy = energy - penalty
+    draw_energy_air()
+    if energy < 1:
+        end_the_game("You're out of energy!")
+
+def hazard_start():
+    global current_room_hazards_list, hazard_map
+    if current_room in hazard_data.keys():
+        current_room_hazards_list = hazard_data[current_room]
+        for hazard in current_room_hazards_list:
+            hazard_y = hazard[0]
+            hazard_x = hazard[1]
+            hazard_map[hazard_y][hazard_x] = 49 + (current_room % 3)
+        clock.schedule_interval(hazard_move, 0.18)
+
+def hazard_move():
+    global current_room_hazards_list, hazard_data, hazard_map
+    global old_player_x, old_player_y
+
+    if game_over:
+        return
+
+    for hazard in current_room_hazards_list:
+        hazard_y = hazard[0]
+        hazard_x = hazard[1]
+        hazard_direction = hazard[2]
+
+        old_hazard_x = hazard_x
+        old_hazard_y = hazard_y
+
+        hazard_map[old_hazard_y][old_hazard_x] = 0
+
+        if hazard_direction == 1: # up
+            hazard_y -= 1
+        if hazard_direction == 2: # right
+            hazard_x += 1
+        if hazard_direction == 3: # down
+            hazard_y += 1
+        if hazard_direction == 4: # left
+            hazard_x -= 1
+
+        hazard_should_bounce = False
+
+        if (hazard_y == player_y and hazard_x == player_x) or \
+            (hazard_y == from_player_y and hazard_x == from_player_x
+            and player_frame > 0):
+            sounds.ouch.play()
+            deplete_energy(10)
+            hazard_should_bounce = True
+
+        # Stop hazard going out of the doors
+        if hazard_x == room_width:
+            hazard_should_bounce = True
+            hazard_x = room_width - 1
+        if hazard_x == -1:
+            hazard_should_bounce = True
+            hazard_x = 0
+        if hazard_y == room_height:
+            hazard_should_bounce = True
+            hazard_y = room_height - 1
+        if hazard_y == -1:
+            hazard_should_bounce = True
+            hazard_y = 0
+
+        # Stop when hazard hits scenery or another hazard.
+        if room_map[hazard_y][hazard_x] not in items_player_may_stand_on \
+            or hazard_map[hazard_y][hazard_x] != 0:
+            hazard_should_bounce = True
+
+        if hazard_should_bounce:
+            hazard_y = old_hazard_y # Move back to last valid position.
+            hazard_x = old_hazard_x
+            hazard_direction += hazard[3]
+            if hazard_direction > 4:
+                hazard_direction -= 4
+            if hazard_direction < 1:
+                hazard_direction += 4
+            hazard[2] = hazard_direction
+
+        hazard_map[hazard_y][hazard_x] = 49 + (current_room % 3)
+        hazard[0] = hazard_y
+        hazard[1] = hazard_x
+
 ###############
 ##   START   ##
 ###############
@@ -894,24 +1412,12 @@ generate_map()
 clock.schedule_interval(adjust_wall_transparency, 0.05)
 clock.schedule_unique(display_inventory, 1)
 
-#def movement():
-#    global current_room
-#    old_room = current_room
-#    if keyboard.left:
-#        current_room -= 1
-#    if keyboard.right:
-#        current_room += 1
-#    if keyboard.up:
-#        current_room -= MAP_WIDTH
-#    if keyboard.down:
-#        current_room += MAP_WIDTH
-#
-#    if current_room > 50:
-#        current_room = 50
-#    if current_room < 1:
-#        current_room = 1
-#
-#    if current_room != old_room:
-#        print("Entering room: " + str(current_room))
-#
-#clock.schedule_interval(movement, 0.1)
+clock.schedule_unique(draw_energy_air, 0.5)
+clock.schedule_unique(alarm, 10)
+
+# A higher number below gives a longer time limit.
+if HAZARDS_ON:
+    clock.schedule_interval(air_countdown, 5)
+
+
+sounds.mission.play() # Intro music
